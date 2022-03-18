@@ -1,0 +1,4 @@
+fastapi
+SQLAlchemy
+SQLAlchemy-Utils
+python-multipart
