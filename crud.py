@@ -11,10 +11,11 @@ BASE_DIR = pathlib.Path(__file__).resolve().parent
 def get_user(db: Session, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first()
 
+def check_user(db: Session, user_id: int):
+    return db.query(models.User.id).filter(models.User.id == user_id) is not None
 
 def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
-
 
 def get_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.User).offset(skip).limit(limit).all()
@@ -27,18 +28,24 @@ def create_user(db: Session, user: schemas.UserCreate):
     db.refresh(db_user)
     return db_user
 
-def edit_user(de: Session, user: schemas.User):
-    pass
+def update_user(db: Session, user: schemas.User):
+    db_user = get_user(db, user.id)
+    if db_user is not None:
+        db_user.update(**user.dict())
+        db.commit()
+        return True
+    return False
 
 def delete_user(db: Session, user_id: int):
     db_user = get_user(db, user_id)
     if db_user is not None:
         db_user.delete()
+        db.commit()
         return True
     return False
 
 def get_car(db: Session, car_id: int):
-    return db.session.query(models.Car.id).filter_by(id=car_id).first()
+    return db.query(models.Car).filter_by(id=car_id).first()
 
 def get_cars(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Car).offset(skip).limit(limit).all()
@@ -71,8 +78,21 @@ def create_car(db: Session, car: schemas.CarCreate):
     db.commit()
     return db_car
 
-def update_car(db: Session):
-    pass
+def update_car(db: Session, car : schemas.Car):
+    db_car = get_car(db, car.id)
+    if db_car is not None:
+        db_car.update(**car.dict())
+        db.commit()
+        return True
+    return False
+
+def delete_car(db: Session, car_id : int):
+    db_car = get_car(db, car_id)
+    if db_car is not None:
+        db_car.delete()
+        db.commit()
+        return True
+    return False
 
 def get_rentals_by_car(db: Session, car_id: int):
     return db.query(models.Car).filter(models.Car.id == car_id).first().rentals
@@ -97,3 +117,10 @@ def create_rental(db: Session, user_id: int, rental: schemas.RentalCreate):
     db.commit()
     db.refresh(db_item)
     return db_item
+
+def get_rental(db: Session, rental_id: int):
+    return db.query(models.Rental).filter(models.Rental.id == rental_id).first()
+
+def delete_rental(db: Session, rental_id: int):
+    db.query(models.Rental).filter(models.Rental.id == rental_id).delete()
+    db.commit()

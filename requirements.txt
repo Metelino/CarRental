@@ -1,4 +1,7 @@
+uvicorn
 fastapi
 SQLAlchemy
 SQLAlchemy-Utils
+alembic
 python-multipart
+python-jose[cryptography]

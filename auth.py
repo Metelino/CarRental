@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel
 from jose import jwt, JWTError
@@ -12,8 +12,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 #oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-def create_jwt(id, expires_delta: Optional[timedelta] = None):
-    payload = dict(id=id)
+def create_jwt(expires_delta: Optional[timedelta] = None, **kwargs):
+    payload = dict(**kwargs)
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
@@ -24,7 +24,7 @@ def create_jwt(id, expires_delta: Optional[timedelta] = None):
 
 security = HTTPBearer()
 
-def verify_jwt(creds = Depends(security)):
+def verify_token(creds = Depends(security)):
     token = creds.credentials
     print(token)
     credentials_exception = HTTPException(
@@ -45,6 +45,18 @@ def verify_jwt(creds = Depends(security)):
             raise credentials_exception
         if datetime.utcfromtimestamp(exp) < datetime.utcnow():
             raise expired_exception
-        return payload['id']
+        return payload
     except JWTError:
         raise credentials_exception
+
+def verify_user(payload = Depends(verify_token)):
+    return int(payload['id'])
+
+def verify_role(roles, payload = Depends(verify_token)):
+    print("PRZED AUTH")
+    if payload['role'] not in roles:
+        raise HTTPException(
+            status_code=401,
+            detail="You don't have admin privileges",
+        )
+    print("PO AUTH")
