@@ -5,7 +5,7 @@ import imghdr
 BASE_DIR = Path(__file__).resolve().parent
 print(f'Ścieżka: {BASE_DIR}')
 
-f = open(f"{BASE_DIR}/sony.jpg", "rb")
+f = open(f"{BASE_DIR}/gruz.jpg", "rb")
 #print(f.read())
 img_bytes = f.read()
 ext = imghdr.what(None, h=img_bytes)
