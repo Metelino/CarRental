@@ -51,6 +51,8 @@ def get_car(db: Session, car_id: int):
     return db.query(models.Car).filter_by(id=car_id).first()
 
 def check_car(db: Session, car_id: int):
+    car = db.query(models.Car.id).filter(models.Car.id == car_id)
+    print(car)
     return db.query(models.Car.id).filter(models.Car.id == car_id) is not None
 
 def get_cars(db: Session, skip: int = 0, limit: int = 100):

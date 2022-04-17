@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Optional, List
 
-from pydantic import BaseModel
 from jose import jwt, JWTError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, HTTPBearer, HTTPAuthorizationCredentials
@@ -57,6 +56,6 @@ def verify_role(roles, payload = Depends(verify_token)):
     if payload['role'] not in roles:
         raise HTTPException(
             status_code=401,
-            detail="You don't have admin privileges",
+            detail="You don't have privileges",
         )
     print("PO AUTH")

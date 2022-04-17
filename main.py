@@ -59,7 +59,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/users", status_code=204)
 def edit_user(user: schemas.UserEdit, user_id: int = Depends(auth.verify_user), db: Session = Depends(get_db)):
-    if crud.update_user():
+    if crud.update_user(db, user):
         return Response(status_code=204)
     raise HTTPException(status_code=400, detail="User doesn't exist")
 
@@ -116,6 +116,13 @@ def edit_car(car: schemas.CarEdit, db: Session = Depends(get_db)):
 def read_cars(offset: int, db: Session = Depends(get_db)):
     db_cars = crud.get_cars(db, offset*10, 10)
     return db_cars
+
+@app.get("/cars/{car_id}", response_model=schemas.Car)
+def get_car(car_id: int, db: Session = Depends(get_db)):
+    db_car = crud.get_car(db, car_id)
+    if db_car is None:
+        raise HTTPException(status_code=400, detail="Car doesn't exist")
+    return db_car
 
 @app.get("/rentals/car/{car_id}", response_model=List[schemas.Rental], status_code=200)
 def car_rentals(car_id: int, db: Session = Depends(get_db)):
