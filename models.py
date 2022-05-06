@@ -1,5 +1,5 @@
 from email.policy import default
-from sqlalchemy import Column, ForeignKey, Integer, String, Date, Float, Computed
+from sqlalchemy import Column, ForeignKey, Integer, String, Date, Float, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from database import SessionLocal
@@ -21,7 +21,9 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     password = Column(String, index=True)
 
-    rentals = relationship("Rental")
+    #related_cars = relationship("Car", secondary='Related_car')
+
+    rentals = relationship("Rental", lazy='dynamic')
 
 class Car(Base):
     __tablename__ = "cars"
@@ -33,7 +35,7 @@ class Car(Base):
     description = Column(String, index=True)
     price = Column(Float, index=True)
     
-    rentals = relationship("Rental", back_populates='car')
+    rentals = relationship("Rental", back_populates='car', lazy='dynamic')
 
 def get_total_price(context):
     fields = context.get_current_parameters()
@@ -47,6 +49,7 @@ class Rental(Base):
     user_id = Column(Integer, ForeignKey(User.id, ondelete="CASCADE"))
     rental_start = Column(Date, index=True)
     rental_end = Column(Date, index=True)
+    paid = Column(Boolean, index=True, default=False)
     #total_price =  Column(Float, index=True, default=get_total_price, onupdate=get_total_price)
     @property
     def total_price(self):
@@ -54,6 +57,13 @@ class Rental(Base):
 
     car = relationship("Car", back_populates="rentals")
     #user = relationship("User", back_populates="rentals")
+
+# class RelatedCar(Base):
+#     __tablename__ = "related_car"
+
+#     id = Column(Integer, primary_key=True, index=True)
+#     car_id = Column(Integer, ForeignKey(Car.id, ondelete="CASCADE"))
+#     user_id = Column(Integer, ForeignKey(User.id, ondelete="CASCADE"))
 
 if __name__ == "__main__":
     admin_user = User(role='admin', name='Wojciech', surname='Metelski', email='metel@gmail.com', password='admin123')

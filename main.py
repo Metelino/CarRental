@@ -61,19 +61,19 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 def edit_user(user: schemas.UserEdit, user_id: int = Depends(auth.verify_user), db: Session = Depends(get_db)):
     if crud.update_user(db, user):
         return Response(status_code=204)
-    raise HTTPException(status_code=400, detail="User doesn't exist")
+    raise HTTPException(status_code=404, detail="User doesn't exist")
 
 @app.delete("/users/{user_id}", status_code=204, dependencies=[Depends(admin_role)])
 def delete_user(user_id: int, db: Session = Depends(get_db)):
     if crud.delete_user(db, user_id):
         return Response(status_code=204)
-    raise HTTPException(status_code=400, detail="User doesn't exist")
+    raise HTTPException(status_code=404, detail="User doesn't exist")
 
 @app.delete("/users", status_code=204)
 def delete_user(user_id: int = Depends(verify_user), db: Session = Depends(get_db)):
     if crud.delete_user(db, user_id):
         return Response(status_code=204)
-    raise HTTPException(status_code=400, detail="User doesn't exist")
+    raise HTTPException(status_code=404, detail="User doesn't exist")
 
 @app.post("/users/login", response_model=schemas.Token, status_code=200)
 def login(user: schemas.UserIn, db: Session = Depends(get_db)):
@@ -97,20 +97,18 @@ def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 
 @app.post("/cars", response_model=schemas.Car, dependencies=[Depends(admin_role)])
 def create_car(car: schemas.CarCreate, db: Session = Depends(get_db)):
-    db_car = crud.create_car(db, car)
-    return db_car
+    return crud.create_car(db, car)
 
 @app.delete("/cars/{car_id}", dependencies=[Depends(admin_role)], status_code=204)
 def delete_car(car_id: int, db: Session = Depends(get_db)):
-    if crud.delete_car(db, car_id):
-        return Response(status_code=204)
-    raise HTTPException(status_code=400, detail="Car doesn't exist")
+    crud.delete_car(db, car_id)
+    return Response(status_code=204)
 
 @app.patch("/cars", dependencies=[Depends(admin_role)], status_code=204)
 def edit_car(car: schemas.CarEdit, db: Session = Depends(get_db)):
     if crud.update_car(db, car):
         return Response(status_code=204)
-    raise HTTPException(status_code=400, detail="Car doesn't exist")
+    raise HTTPException(status_code=404, detail="Car doesn't exist")
     
 @app.get("/cars", response_model=List[schemas.Car])
 def read_cars(offset: int, db: Session = Depends(get_db)):
@@ -121,20 +119,43 @@ def read_cars(offset: int, db: Session = Depends(get_db)):
 def get_car(car_id: int, db: Session = Depends(get_db)):
     db_car = crud.get_car(db, car_id)
     if db_car is None:
-        raise HTTPException(status_code=400, detail="Car doesn't exist")
+        raise HTTPException(status_code=404, detail="Car doesn't exist")
     return db_car
 
 @app.get("/rentals/car/{car_id}", response_model=List[schemas.Rental], status_code=200)
-def car_rentals(car_id: int, db: Session = Depends(get_db)):
+def car_active_rentals(car_id: int, db: Session = Depends(get_db)):
     if crud.check_car(db, car_id):
-        return crud.get_rentals_by_car(db, car_id)
-    raise HTTPException(status_code=400, detail="Car doesn't exist")
+        return crud.get_active_rentals_by_car(db, car_id)
+    raise HTTPException(status_code=404, detail="Car doesn't exist")
 
-@app.get("/rentals/user", response_model=List[schemas.Rental], status_code=200)
-def user_rentals(user_id: int = Depends(auth.verify_user), db: Session = Depends(get_db)):
+@app.get("/rentals", response_model=List[schemas.Rental], status_code=200)
+def user_active_rentals(user_id: int = Depends(auth.verify_user), db: Session = Depends(get_db)):
     if crud.check_user(db, user_id):
-        return crud.get_rentals_by_user(db, user_id)
-    raise HTTPException(status_code=400, detail="User doesn't exist")
+        return crud.get_active_rentals_by_user(db, user_id)
+    raise HTTPException(status_code=404, detail="User doesn't exist")
+
+
+@app.get("/rentals/unpaid", response_model=List[schemas.Rental], status_code=200)
+def user_unpaid_rentals(user_id: int = Depends(auth.verify_user), db: Session = Depends(get_db)):
+    if crud.check_user(db, user_id):
+        return crud.get_unpaid_rentals_by_user(db, user_id)
+    raise HTTPException(status_code=404, detail="User doesn't exist")
+
+@app.get("/rentals/pay/{rental_id}", status_code=204)
+def pay_rental(rental_id: int, user_id: int = Depends(auth.verify_user), db: Session = Depends(get_db)):
+    if crud.check_user(db, user_id):
+        rental = crud.get_rental(db, rental_id)
+        if rental.user_id == user_id:
+            crud.rental_pay(db, rental_id)
+            return Response(status_code=204)
+        raise HTTPException(403, "Not user's rental")
+    raise HTTPException(status_code=404, detail="User doesn't exist")
+
+@app.get("/rentals/user/{user_id}", dependencies=[Depends(admin_role)], response_model=List[schemas.Rental], status_code=200)
+def user_all_rentals(user_id: int, db: Session = Depends(get_db)):
+    if crud.check_user(db, user_id):
+        return crud.get_all_rentals_by_user(db, user_id)
+    raise HTTPException(status_code=404, detail="User doesn't exist")
 
 @app.post("/rentals", response_model=schemas.Rental, status_code=201)
 def create_rental(rental: schemas.RentalCreate, user_id: int = Depends(auth.verify_user), db: Session = Depends(get_db)):
@@ -143,14 +164,14 @@ def create_rental(rental: schemas.RentalCreate, user_id: int = Depends(auth.veri
         if db_rental:
             return db_rental
         raise HTTPException(status_code=400, detail="Car is already rented for the chosen period of time")
-    raise HTTPException(status_code=400, detail="Car doesn't exist")
+    raise HTTPException(status_code=404, detail="Car doesn't exist")
 
 @app.patch("/rentals", status_code=204, dependencies=[Depends(admin_role)])
 def change_rental(rental: schemas.RentalDateEdit, db: Session = Depends(get_db)):
     if crud.check_rental(db, rental.id):
         crud.update_rental(db, rental)
         return Response(status_code=204)
-    raise HTTPException(400, "Rental does not exist")
+    raise HTTPException(404, "Rental does not exist")
 
 # @app.patch("/rentals", status_code=204)
 # def change_rental(rental: schemas.RentalDateEdit, user_id: int = Depends(verify_user), db: Session = Depends(get_db)):
@@ -168,8 +189,9 @@ def stop_rental(rental_id: int, user_id: int = Depends(verify_user), db: Session
         if db_rental.user_id == user_id:
             if crud.stop_rental(db, rental_id):
                 return Response(status_code=204)
-            raise HTTPException(409, "Given rental hasn't started yet")
-    raise HTTPException(400, "Given rental does not exist")
+            #raise HTTPException(205, "Given rental hasn't started yet")
+            Response(status_code=205)
+    raise HTTPException(404, "Given rental does not exist")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

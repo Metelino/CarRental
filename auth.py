@@ -25,7 +25,7 @@ security = HTTPBearer()
 
 def verify_token(creds = Depends(security)):
     token = creds.credentials
-    print(token)
+    #print(token)
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
@@ -37,9 +37,9 @@ def verify_token(creds = Depends(security)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         exp = payload['exp']
-        print(exp)
-        print(datetime.utcfromtimestamp(exp))
-        print(datetime.utcnow())
+        #print(exp)
+        #print(datetime.utcfromtimestamp(exp))
+        #print(datetime.utcnow())
         if exp is None:
             raise credentials_exception
         if datetime.utcfromtimestamp(exp) < datetime.utcnow():
@@ -52,10 +52,10 @@ def verify_user(payload = Depends(verify_token)):
     return int(payload['id'])
 
 def verify_role(roles, payload = Depends(verify_token)):
-    print("PRZED AUTH")
+    #print("PRZED AUTH")
     if payload['role'] not in roles:
         raise HTTPException(
             status_code=401,
             detail="You don't have privileges",
         )
-    print("PO AUTH")
+    #print("PO AUTH")

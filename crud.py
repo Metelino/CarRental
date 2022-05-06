@@ -4,6 +4,7 @@ import pathlib
 import datetime
 
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
 
 import models, schemas
 
@@ -13,8 +14,7 @@ def get_user(db: Session, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first()
 
 def check_user(db: Session, user_id: int):
-    print(db.query(models.User.id).filter(models.User.id == user_id))
-    return db.query(models.User.id).filter(models.User.id == user_id) is not None
+    return db.query(models.User.id).filter(models.User.id == user_id).first() is not None
 
 def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
@@ -51,9 +51,7 @@ def get_car(db: Session, car_id: int):
     return db.query(models.Car).filter_by(id=car_id).first()
 
 def check_car(db: Session, car_id: int):
-    car = db.query(models.Car.id).filter(models.Car.id == car_id)
-    print(car)
-    return db.query(models.Car.id).filter(models.Car.id == car_id) is not None
+    return db.query(models.Car.id).filter(models.Car.id == car_id).first() is not None
 
 def get_cars(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Car).offset(skip).limit(limit).all()
@@ -90,7 +88,7 @@ def update_car(db: Session, car : schemas.Car):
     if car.img is not None:
         img_bytes, _ = decode_image(car.img)
     db_car = get_car(db, car.id)
-    if db_car is not None:
+    try:
         if car.img is not None:
             save_img(db_car.img, img_bytes)
             car.img = None
@@ -98,32 +96,56 @@ def update_car(db: Session, car : schemas.Car):
             setattr(db_car, attr, value)
         #db_car.update(car.dict())
         db.commit()
-        return True
-    return False
+    except:
+        raise HTTPException(404, "Car doesn't exist!")
 
 def delete_car(db: Session, car_id : int):
     db_car = get_car(db, car_id)
-    if db_car is not None:
+    # if db_car is not None:
+    #     db.delete(db_car)
+    #     #db_car.delete()
+    #     db.commit()
+    #     return True
+    # return False
+    try:
         db.delete(db_car)
-        #db_car.delete()
         db.commit()
-        return True
-    return False
+    except:
+        raise HTTPException(404, 'Car does not exist!')
+        
+def get_active_rentals_by_car(db: Session, car_id: int):
+    TODAY = datetime.date.today()
+    rentals = db.query(models.Car).filter(models.Car.id == car_id).first().rentals
+    return rentals.filter(models.Rental.rental_end > TODAY).all()
 
-def get_rentals_by_car(db: Session, car_id: int):
-    return db.query(models.Car).filter(models.Car.id == car_id).first().rentals
+def get_active_rentals_by_user(db: Session, user_id: int):
+    TODAY = datetime.date.today()
+    rentals = db.query(models.User).filter(models.User.id == user_id).first().rentals
+    return rentals.filter(models.Rental.rental_end > TODAY).all()
 
-def get_rentals_by_user(db: Session, user_id: int):
-    return db.query(models.User).filter(models.User.id == user_id).first().rentals
+def get_finished_rentals_by_user(db: Session, user_id: int):
+    return db.query(models.User).filter(models.User.id == user_id).first().rentals.all()
+
+def get_unpaid_rentals_by_user(db: Session, user_id: int):
+    rentals = db.query(models.User).filter(models.User.id == user_id).first().rentals
+    return rentals.filter(models.Rental.paid == False).all()
 
 def get_rental(db: Session, rental_id: int):
     return db.query(models.Rental).filter(models.Rental.id == rental_id).first()
 
+def rental_pay(db: Session, rental_id: int):
+    rental = get_rental(db, rental_id)
+    try:
+        rental.paid = True
+        db.commit()
+    except:
+        raise HTTPException(404, "Rental does not exist!")
+
 def check_rental(db: Session, rental_id: int):
-    return db.query(models.Rental.id).filter(models.Rental.id == rental_id) is not None
+    return db.query(models.Rental.id).filter(models.Rental.id == rental_id).first() is not None
 
 def create_rental(db: Session, user_id: int, rental: schemas.RentalCreate):
-    db_rentals = get_rentals_by_car(db, rental.car_id)
+    db_rentals = get_active_rentals_by_car(db, rental.car_id)
     start = rental.rental_start
     end = rental.rental_end
 
@@ -142,39 +164,46 @@ def create_rental(db: Session, user_id: int, rental: schemas.RentalCreate):
     db.refresh(db_item)
     return db_item
 
-# def update_rental(db: Session, rental: schemas.RentalDateEdit):
-#     db_rental = get_rental(db, rental.id)
-#     db_rentals = get_rentals_by_car(db, db_rental.car_id)
-#     #db_rentals = db_rentals.filter(models.Rental.id != rental.id)
-#     start = rental.rental_start
-#     end = rental.rental_end
+def update_rental(db: Session, rental: schemas.RentalDateEdit):
+    current_rental = get_rental(db, rental.id)
+    try:
+        db_rentals = get_active_rentals_by_car(db, current_rental.car_id)
+        #db_rentals = db_rentals.filter(models.Rental.id != rental.id).all()
+        start = rental.rental_start
+        end = rental.rental_end
 
-#     DAY = datetime.timedelta(days=1)
-#     for r in db_rentals: # Sprawdzanie czy okres wynajmu nie nachodzi na inny wynajem
-#         if start >= r.rental_start and start <= (r.rental_end + DAY):
-#             return 
-#         elif end >= r.rental_start and end <= (r.rental_end + DAY):
-#             return
-#         elif start < r.rental_start and end > (r.rental_end + DAY):
-#             return
-#     db_rental = get_rental(db, rental.id)
-#     for attr, value in rental.dict(exclude_defaults=True).items():
-#         setattr(db_rental, attr, value)
-#     db.commit()
+        DAY = datetime.timedelta(days=1)
+        for r in db_rentals: # Sprawdzanie czy okres wynajmu nie nachodzi na inny wynajem
+            if r.id == current_rental.id:
+                continue
+            if start >= r.rental_start and start <= (r.rental_end + DAY):
+                return 
+            elif end >= r.rental_start and end <= (r.rental_end + DAY):
+                return
+            elif start < r.rental_start and end > (r.rental_end + DAY):
+                return
+        for attr, value in rental.dict(exclude_defaults=True).items():
+            setattr(current_rental, attr, value)
+        db.commit()
+    except:
+        raise HTTPException(404, 'Rental does not exist!')
 
 def stop_rental(db: Session, rental_id: int):
     db_rental = get_rental(db, rental_id)
     TODAY = datetime.date.today()
-    if db_rental.rental_start < TODAY:
-        return False
-    db_rental.rental_end = TODAY
-    db.commit()
-    return True
-
-def delete_rental(db: Session, rental_id: int):
-    db_rental = get_rental(db, rental_id)
-    if db_rental is not None:
+    DAY = datetime.timedelta(days=1)
+    if db_rental.rental_start > TODAY:
         db.delete(db_rental)
         db.commit()
         return True
+    db_rental.rental_end = TODAY + DAY
+    db.commit()
     return False
+
+# def delete_rental(db: Session, rental_id: int):
+#     db_rental = get_rental(db, rental_id)
+#     if db_rental is not None:
+#         db.delete(db_rental)
+#         db.commit()
+#         return True
+#     return False
