@@ -1,7 +1,7 @@
 from typing import List, Optional, Union
 from datetime import date
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, EmailStr
 
 class CarCreate(BaseModel):
     brand: str
@@ -24,7 +24,7 @@ class Car(CarCreate):
         orm_mode = True
 
 class UserBase(BaseModel):
-    email: str
+    email: EmailStr
 
 class UserIn(UserBase):
     password: str
@@ -54,20 +54,27 @@ class RentalBase(BaseModel):
     rental_start: Optional[date] = None
     rental_end: Optional[date] = None
 
-    # @validator('rental_end')
-    # def passwords_match(cls, v, values, **kwargs):
-    #     if 'rental_start' in values and v < values['rental_start']:
-    #         raise ValueError('Invalid date range')
-    #     return v
+    @validator('rental_end')
+    def valid_date_range(cls, v, values, **kwargs):
+        if 'rental_start' in values and v < values['rental_start']:
+            raise ValueError('Invalid date range')
+        return v
 
-class RentalDateEdit(RentalBase):
-    id: int
+    @validator('*')
+    def not_expired_date(cls, v, values, **kwargs):
+        TODAY = date.today()
+        if v < TODAY:
+            raise ValueError("Expired date") 
+        return v
+
+# class RentalDateEdit(RentalBase):
+#     id: int
     
 class RentalCreate(RentalBase):
     car_id: int
 
 class Rental(RentalBase):
-    car: Car
+    car_id: int
     user_id: int
     id: int
     total_price : float

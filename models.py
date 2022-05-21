@@ -37,23 +37,23 @@ class Car(Base):
     
     rentals = relationship("Rental", back_populates='car', lazy='dynamic')
 
-def get_total_price(context):
-    fields = context.get_current_parameters()
-    return (fields['rental_end'] - fields['rental_start']).days * fields['car'].price
+# def get_total_price(context):
+#     fields = context.get_current_parameters()
+#     return (fields['rental_end'] - fields['rental_start']).days * fields['car'].price
 
 class Rental(Base):
     __tablename__ = "rentals"
 
     id = Column(Integer, primary_key=True, index=True)
-    car_id = Column(Integer, ForeignKey(Car.id, ondelete="CASCADE"))
-    user_id = Column(Integer, ForeignKey(User.id, ondelete="CASCADE"))
+    car_id = Column(Integer, ForeignKey(Car.id))
+    user_id = Column(Integer, ForeignKey(User.id))
     rental_start = Column(Date, index=True)
     rental_end = Column(Date, index=True)
     paid = Column(Boolean, index=True, default=False)
     #total_price =  Column(Float, index=True, default=get_total_price, onupdate=get_total_price)
     @property
     def total_price(self):
-        return ((self.rental_end - self.rental_start).days + 1) * self.car.price
+        return (self.rental_end - self.rental_start).days * self.car.price
 
     car = relationship("Car", back_populates="rentals")
     #user = relationship("User", back_populates="rentals")
