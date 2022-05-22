@@ -47,8 +47,8 @@ class Rental(Base):
     __tablename__ = "rentals"
 
     id = Column(Integer, primary_key=True, index=True)
-    car_id = Column(Integer, ForeignKey('users.id'))
-    user_id = Column(Integer, ForeignKey('cars.id'))
+    car_id = Column(Integer, ForeignKey(Car.id))
+    user_id = Column(Integer, ForeignKey(User.id))
     rental_start = Column(Date, index=True)
     rental_end = Column(Date, index=True)
     paid = Column(Boolean, index=True, default=False)
@@ -58,7 +58,7 @@ class Rental(Base):
         return (self.rental_end - self.rental_start).days * self.car.price
 
     car = relationship("Car", back_populates="rentals")
-    #user = relationship("User", back_populates="rentals")
+    user = relationship("User", back_populates="rentals")
 
 # class RelatedCar(Base):
 #     __tablename__ = "related_car"
