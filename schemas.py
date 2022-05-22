@@ -84,3 +84,13 @@ class Rental(RentalBase):
 
     class Config:
         orm_mode = True
+
+class UserRental(RentalBase):
+    car: Car
+    #car_id: int
+    user: User
+    id: int
+    total_price : float
+
+    class Config:
+        orm_mode = True

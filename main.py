@@ -125,7 +125,7 @@ def get_car_active_rentals(car_id: int, db: Session = Depends(get_db)):
         return crud.get_active_rentals_by_car(db, car_id)
     raise HTTPException(status_code=404, detail="Car doesn't exist")
 
-@app.get("/rentals/car/{car_id}/all", response_model=List[schemas.Rental], status_code=200, dependencies=[Depends(admin_role)])
+@app.get("/rentals/car/{car_id}/all", response_model=List[schemas.UserRental], status_code=200, dependencies=[Depends(admin_role)])
 def get_car_all_rentals(car_id: int, db: Session = Depends(get_db)):
     if crud.check_car(db, car_id):
         return crud.get_all_rentals_by_car(db, car_id)
