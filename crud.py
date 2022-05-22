@@ -19,10 +19,15 @@ def get_user(db: Session, user_id: int):
     return user
 
 def check_user(db: Session, user_id: int):
-    return db.query(models.User.id).filter(models.User.id == user_id).first() is not None
+    return db.query(models.User.id).filter(
+        models.User.id == user_id,
+    ).first() is not None
 
 def get_user_by_email(db: Session, email: str):
-    user = db.query(models.User).filter(models.User.email == email).first()
+    user = db.query(models.User).filter(
+        models.User.email == email,
+        models.User.active == True
+    ).first()
     if user is None:
         raise HTTPException(404, "User doesn't exist")
     return user
@@ -46,7 +51,7 @@ def update_user(db: Session, user_id: int, user: schemas.UserEdit):
 
 def delete_user(db: Session, user_id: int):
     db_user = get_user(db, user_id)
-    db.delete(db_user)
+    db_user.active = False
     db.commit()
 
 def get_car(db: Session, car_id: int):
@@ -56,15 +61,21 @@ def get_car(db: Session, car_id: int):
     return car
 
 def check_car(db: Session, car_id: int):
-    return db.query(models.Car.id).filter(models.Car.id == car_id).first() is not None
+    return db.query(models.Car.id).filter(
+        models.Car.id == car_id, 
+        models.Car.active == True
+    ).first() is not None
 
 def get_cars(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Car).offset(skip).limit(limit).all()
+    return db.query(models.Car).filter(models.Car.active == True).offset(skip).limit(limit).all()
 
 def decode_image(img_str):
-    img_bytes = base64.b64decode(img_str)
-    ext = imghdr.what(None, h=img_bytes)
-    return (img_bytes, ext)
+    try:
+        img_bytes = base64.b64decode(img_str)
+        ext = imghdr.what(None, h=img_bytes)
+        return (img_bytes, ext)
+    except:
+        raise HTTPException(400, "Invalid image format!")
 
 def save_img(path, file_bytes):
     print(BASE_DIR / path)
@@ -95,23 +106,24 @@ def create_car(db: Session, car: schemas.CarCreate):
     return db_car
 
 def update_car(db: Session, car_id: int, car: schemas.CarEdit):
-    if car.img is not None:
-        img_bytes, ext = decode_image(car.img)
     db_car = get_car(db, car_id)
-    img_path = f'media/cars/car_{db_car.id}.{ext}'
-    if car.img is not None:
+    img_path = None
+    if car.img != "":
+        img_bytes, ext = decode_image(car.img)
+        img_path = f'media/cars/car_{db_car.id}.{ext}'
         delete_img(car.img)
         #save_img(db_car.img, img_bytes)
-    save_img(img_path, img_bytes)
+        save_img(img_path, img_bytes)
+        db_car.img = img_path
     for attr, value in car.dict(exclude_defaults=True).items():
         setattr(db_car, attr, value)
-    db_car.img = img_path
-    #db_car.update(car.dict())
+    if img_path:
+        setattr(db_car, 'img', img_path)
     db.commit()
 
 def delete_car(db: Session, car_id : int):
     db_car = get_car(db, car_id)
-    db.delete(db_car)
+    db_car.active = False
     db.commit()
         
 def get_active_rentals_by_car(db: Session, car_id: int):

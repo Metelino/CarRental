@@ -11,11 +11,11 @@ class CarCreate(BaseModel):
     price: str
 
 class CarEdit(BaseModel):
-    brand: Optional[str] = None
-    model: Optional[str] = None
-    description: Optional[str] = None 
-    img: Optional[str] = None
-    price: Optional[str] = None
+    brand: Optional[str] = ""
+    model: Optional[str] = ""
+    description: Optional[str] = "" 
+    img: Optional[str] = ""
+    price: Optional[str] = ""
 
 class Car(CarCreate):
     id: int
@@ -34,15 +34,17 @@ class UserCreate(UserBase):
     surname: str
     password: str
 
-class UserEdit(UserBase):
-    name: Optional[str] = None
-    surname: Optional[str] = None
-    password: Optional[str] = None
+class UserEdit(BaseModel):
+    email: Optional[str] = ""
+    name: Optional[str] = ""
+    surname: Optional[str] = ""
+    password: Optional[str] = ""
 
 class User(UserBase):
     id: int
     name: str
     surname: str
+    active: bool
 
     class Config:
         orm_mode = True
@@ -51,8 +53,8 @@ class Token(BaseModel):
     token: str
 
 class RentalBase(BaseModel):
-    rental_start: Optional[date] = None
-    rental_end: Optional[date] = None
+    rental_start: Optional[date] = ""
+    rental_end: Optional[date] = ""
 
     @validator('rental_end')
     def valid_date_range(cls, v, values, **kwargs):
@@ -60,7 +62,7 @@ class RentalBase(BaseModel):
             raise ValueError('Invalid date range')
         return v
 
-    @validator('*')
+    @validator('rental_start', 'rental_end')
     def not_expired_date(cls, v, values, **kwargs):
         TODAY = date.today()
         if v < TODAY:
@@ -74,7 +76,8 @@ class RentalCreate(RentalBase):
     car_id: int
 
 class Rental(RentalBase):
-    car_id: int
+    car: Car
+    #car_id: int
     user_id: int
     id: int
     total_price : float

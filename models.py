@@ -1,5 +1,5 @@
 from email.policy import default
-from sqlalchemy import Column, ForeignKey, Integer, String, Date, Float, Boolean
+from sqlalchemy import Column, ForeignKey, Integer, String, Date, Float, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from database import SessionLocal
@@ -20,6 +20,7 @@ class User(Base):
     surname = Column(String, index=True)
     email = Column(String, unique=True, index=True)
     password = Column(String, index=True)
+    active = Column(Boolean, index=True, default=True)
 
     #related_cars = relationship("Car", secondary='Related_car')
 
@@ -34,6 +35,7 @@ class Car(Base):
     img = Column(String, index=True) # ścieżka do pliku w media
     description = Column(String, index=True)
     price = Column(Float, index=True)
+    active = Column(Boolean, index=True, default=True)
     
     rentals = relationship("Rental", back_populates='car', lazy='dynamic')
 
@@ -45,8 +47,8 @@ class Rental(Base):
     __tablename__ = "rentals"
 
     id = Column(Integer, primary_key=True, index=True)
-    car_id = Column(Integer, ForeignKey(Car.id))
-    user_id = Column(Integer, ForeignKey(User.id))
+    car_id = Column(Integer, ForeignKey('users.id'))
+    user_id = Column(Integer, ForeignKey('cars.id'))
     rental_start = Column(Date, index=True)
     rental_end = Column(Date, index=True)
     paid = Column(Boolean, index=True, default=False)
@@ -66,7 +68,7 @@ class Rental(Base):
 #     user_id = Column(Integer, ForeignKey(User.id, ondelete="CASCADE"))
 
 if __name__ == "__main__":
-    admin_user = User(role='admin', name='Wojciech', surname='Metelski', email='metel@gmail.com', password='admin123')
+    admin_user = User(active=True, role='admin', name='Wojciech', surname='Metelski', email='metel@gmail.com', password='admin123')
     with SessionLocal() as db:
         db.add(admin_user)
         db.commit()
