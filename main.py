@@ -83,16 +83,14 @@ def login(user: schemas.UserIn, db: Session = Depends(get_db)):
     raise HTTPException(401, detail='Invalid email or password')
 
 @app.get("/users", response_model=List[schemas.User], status_code=200, dependencies=[Depends(admin_role)])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    users = crud.get_users(db, skip=skip, limit=limit)
+def read_users(offset: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    users = crud.get_users(db, offset*10, limit)
     return users
 
-# @app.get("/users/{user_id}", response_model=schemas.User)
-# def read_user(user_id: int, db: Session = Depends(get_db)):
-#     db_user = crud.get_user(db, user_id=user_id)
-#     if db_user is None:
-#         raise HTTPException(status_code=404, detail="User not found")
-#     return db_user
+@app.get("/users/{user_id}", response_model=schemas.User)
+def read_user(user_id: int, db: Session = Depends(get_db)):
+    db_user = crud.get_user(db, user_id=user_id)
+    return db_user
 
 @app.post("/cars", response_model=schemas.Car, dependencies=[Depends(admin_role)], status_code=201)
 def create_car(car: schemas.CarCreate, db: Session = Depends(get_db)):
@@ -110,8 +108,8 @@ def edit_car(car_id: int, car: schemas.CarEdit, db: Session = Depends(get_db)):
     #raise HTTPException(status_code=404, detail="Car doesn't exist")
     
 @app.get("/cars", response_model=List[schemas.Car])
-def read_cars(offset: int, db: Session = Depends(get_db)):
-    db_cars = crud.get_cars(db, offset*10, 10)
+def read_cars(offset: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    db_cars = crud.get_cars(db, offset*10, limit)
     return db_cars
 
 @app.get("/cars/{car_id}", response_model=schemas.Car)

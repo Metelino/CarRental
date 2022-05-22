@@ -30,11 +30,11 @@ def new_user():
         json={
             'name':'Wojciech', 
             'surname':'Metelski', 
-            'email':'metel@gmail.com', 
+            'email':'testowy_mail@gmail.com', 
             'password':'haslo'
         }
     )
-    assert response.status_code == 400
+    assert response.status_code == 200
     return response.json()['id']
 
 @pytest.fixture
@@ -89,6 +89,7 @@ def checked_rental(new_user_rental):
         return False
 
     assert check_if_present()
+    return new_user_rental
 
 def test_delete_rental(checked_rental):
     token = create_jwt(id=2)['token']
@@ -132,16 +133,16 @@ def updated_car(new_car):
     response = client.patch(
         f'/cars/{new_car}',
         json={
-            "img":base64_encode(),
+            #"img":base64_encode(),
             "brand":"Skoda",
             "model":"Testowa",
             "description":"Testowe auto",
             "price":2137
-
         },
         headers={'Authorization': f'Bearer {token}'}
     )
-    assert response.status_code == 201
+    assert response.status_code == 204
+    return new_car
 
 def test_delete_car(updated_car):
     token = create_jwt(id=2)['token']
