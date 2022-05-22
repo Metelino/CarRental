@@ -131,6 +131,9 @@ def get_active_rentals_by_car(db: Session, car_id: int):
     rentals = db.query(models.Car).filter(models.Car.id == car_id).first().rentals
     return rentals.filter(models.Rental.rental_end >= TODAY).all()
 
+def get_all_rentals_by_car(db: Session, car_id: int):
+    return db.query(models.Car).filter(models.Car.id == car_id).first().rentals.all()
+
 def get_active_rentals_by_user(db: Session, user_id: int):
     TODAY = datetime.date.today()
     rentals = db.query(models.User).filter(models.User.id == user_id).first().rentals
