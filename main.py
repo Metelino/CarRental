@@ -119,31 +119,31 @@ def get_car(car_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Car doesn't exist")
     return db_car
 
-@app.get("/rentals/car/{car_id}", response_model=List[schemas.Rental], status_code=200)
+@app.get("/rentals/car/{car_id}/active", response_model=List[schemas.Rental], status_code=200)
 def get_car_active_rentals(car_id: int, db: Session = Depends(get_db)):
     if crud.check_car(db, car_id):
         return crud.get_active_rentals_by_car(db, car_id)
     raise HTTPException(status_code=404, detail="Car doesn't exist")
 
-@app.get("/rentals/car/{car_id}/all", response_model=List[schemas.UserRental], status_code=200, dependencies=[Depends(admin_role)])
+@app.get("/rentals/car/{car_id}", response_model=List[schemas.UserRental], status_code=200, dependencies=[Depends(admin_role)])
 def get_car_all_rentals(car_id: int, db: Session = Depends(get_db)):
     if crud.check_car(db, car_id):
         return crud.get_all_rentals_by_car(db, car_id)
     raise HTTPException(status_code=404, detail="Car doesn't exist")
 
-@app.get("/rentals/user/{user_id}/active", response_model=List[schemas.Rental], status_code=200, dependencies=[Depends(admin_role)])
+@app.get("/rentals/user/{user_id}/active", response_model=List[schemas.UserRental], status_code=200, dependencies=[Depends(admin_role)])
 def get_user_active_rentals(user_id: int, db: Session = Depends(get_db)):
     if crud.check_user(db, user_id):
         return crud.get_active_rentals_by_user(db, user_id)
     raise HTTPException(404, "User doesn't exist!")
 
-@app.get("/rentals/user/{user_id}/unpaid", response_model=List[schemas.Rental], status_code=200, dependencies=[Depends(admin_role)])
+@app.get("/rentals/user/{user_id}/unpaid", response_model=List[schemas.UserRental], status_code=200, dependencies=[Depends(admin_role)])
 def get_user_unpaid_rentals(user_id: int, db: Session = Depends(get_db)):
     if crud.check_user(db, user_id):
         return crud.get_unpaid_rentals_by_user(db, user_id)
     raise HTTPException(404, "User doesn't exist!")
 
-@app.get("/rentals/user/{user_id}", dependencies=[Depends(admin_role)], response_model=List[schemas.Rental], status_code=200)
+@app.get("/rentals/user/{user_id}", dependencies=[Depends(admin_role)], response_model=List[schemas.UserRental], status_code=200)
 def get_user_all_rentals(user_id: int, db: Session = Depends(get_db)):
     if crud.check_user(db, user_id):
         return crud.get_all_rentals_by_user(db, user_id)
@@ -161,6 +161,10 @@ def user_active_rentals(user_id: int = Depends(auth.verify_user), db: Session = 
 @app.get("/rentals/unpaid", response_model=List[schemas.Rental], status_code=200)
 def user_unpaid_rentals(user_id: int = Depends(auth.verify_user), db: Session = Depends(get_db)):
     return crud.get_unpaid_rentals_by_user(db, user_id)
+
+@app.get("/rentals/unreturned", response_model=List[schemas.Rental], status_code=200)
+def user_unreturned_rentals(user_id: int = Depends(auth.verify_user), db: Session = Depends(get_db)):
+    return crud.get_unreturned_rentals_by_user(db, user_id)
 
 @app.get("/rentals/pay/{rental_id}", status_code=204)
 def pay_rental(rental_id: int, user_id: int = Depends(auth.verify_user), db: Session = Depends(get_db)):
@@ -201,8 +205,12 @@ def stop_rental(rental_id: int, user_id: int = Depends(verify_user), db: Session
     if db_rental.user_id == user_id:
         crud.stop_rental(db, rental_id)
         return Response(status_code=204)
-        #raise HTTPException(205, "Given rental hasn't started yet")
+    raise HTTPException(403, "Not user's rental")
         #return Response(status_code=200)
+
+@app.get("/rentals/{rental_id}/return", status_code=204, dependencies=[Depends(admin_role)])
+def return_rental(rental_id: int, db: Session = Depends(get_db)):
+    crud.return_rental(db, rental_id)
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

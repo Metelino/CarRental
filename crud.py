@@ -137,7 +137,7 @@ def get_all_rentals_by_car(db: Session, car_id: int):
 def get_active_rentals_by_user(db: Session, user_id: int):
     TODAY = datetime.date.today()
     rentals = db.query(models.User).filter(models.User.id == user_id).first().rentals
-    return rentals.filter(models.Rental.rental_end >= TODAY).all()
+    return rentals.filter(models.Rental.rental_end > TODAY).all()
 
 def get_all_rentals_by_user(db: Session, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first().rentals.all()
@@ -145,6 +145,11 @@ def get_all_rentals_by_user(db: Session, user_id: int):
 def get_unpaid_rentals_by_user(db: Session, user_id: int):
     rentals = db.query(models.User).filter(models.User.id == user_id).first().rentals
     return rentals.filter(models.Rental.paid == False).all()
+
+def get_unreturned_rentals_by_user(db: Session, user_id: int):
+    TODAY = datetime.date.today()
+    rentals = db.query(models.User).filter(models.User.id == user_id).first().rentals
+    return rentals.filter(models.Rental.returned == False, models.Rental.rental_end >= TODAY).all()
 
 def get_rental(db: Session, rental_id: int):
     rental = db.query(models.Rental).filter(models.Rental.id == rental_id).first()
@@ -208,14 +213,21 @@ def update_rental(db: Session, rental_id: int, rental: schemas.RentalBase):
 def stop_rental(db: Session, rental_id: int):
     db_rental = get_rental(db, rental_id)
     TODAY = datetime.date.today()
-    DAY = datetime.timedelta(days=1)
+    #DAY = datetime.timedelta(days=1)
     if db_rental.paid:
         raise HTTPException(409, "Rental has been paid for the whole period!")
     if db_rental.rental_start > TODAY:
         db.delete(db_rental)
         db.commit()
         return
-    db_rental.rental_end = TODAY + DAY
+    db_rental.rental_end = TODAY
+    db.commit()
+
+def return_rental(db: Session, rental_id: int):
+    db_rental = get_rental(db, rental_id)
+    if db_rental.returned:
+        raise HTTPException(400, "Car already returned")
+    db_rental.returned = True
     db.commit()
 
 # def delete_rental(db: Session, rental_id: int):

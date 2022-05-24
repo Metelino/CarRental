@@ -91,6 +91,7 @@ class UserRental(RentalBase):
     user: User
     id: int
     total_price : float
+    returned: bool
 
     class Config:
         orm_mode = True

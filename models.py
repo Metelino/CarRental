@@ -52,6 +52,7 @@ class Rental(Base):
     rental_start = Column(Date, index=True)
     rental_end = Column(Date, index=True)
     paid = Column(Boolean, index=True, default=False)
+    returned = Column(Boolean, index=True, default=False)
     #total_price =  Column(Float, index=True, default=get_total_price, onupdate=get_total_price)
     @property
     def total_price(self):
