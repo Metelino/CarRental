@@ -132,6 +132,8 @@ def get_active_rentals_by_car(db: Session, car_id: int):
     return rentals.filter(models.Rental.rental_end >= TODAY).all()
 
 def get_all_rentals_by_car(db: Session, car_id: int):
+    for i in db.query(models.Car).filter(models.Car.id == car_id).first().rentals.all():
+        print(i.returned)
     return db.query(models.Car).filter(models.Car.id == car_id).first().rentals.all()
 
 def get_active_rentals_by_user(db: Session, user_id: int):
@@ -149,7 +151,7 @@ def get_unpaid_rentals_by_user(db: Session, user_id: int):
 def get_unreturned_rentals_by_user(db: Session, user_id: int):
     TODAY = datetime.date.today()
     rentals = db.query(models.User).filter(models.User.id == user_id).first().rentals
-    return rentals.filter(models.Rental.returned == False, models.Rental.rental_end >= TODAY).all()
+    return rentals.filter(models.Rental.returned == False, models.Rental.rental_end <= TODAY).all()
 
 def get_rental(db: Session, rental_id: int):
     rental = db.query(models.Rental).filter(models.Rental.id == rental_id).first()

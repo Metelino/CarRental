@@ -71,5 +71,6 @@ class Rental(Base):
 if __name__ == "__main__":
     admin_user = User(active=True, role='admin', name='Wojciech', surname='Metelski', email='metel@gmail.com', password='admin123')
     with SessionLocal() as db:
-        db.add(admin_user)
+        #print(f'Deleted: {db.query(Rental).delete()} rentals')
+        #db.add(admin_user)
         db.commit()
