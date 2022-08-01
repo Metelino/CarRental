@@ -22,11 +22,12 @@ Application exposes REST API for use for frontend apps.
 
 ## Features
 
+- user validation and authorization using JWT
 - create account, rent cars for a chosen period of time (user)
 - add new cars, edit existing rentals (admin)
 
 ## Setup
-To run this you need python installed. All project dependencies are listed in requirements.txt.
+To run  you need python installed. All project dependencies are listed in requirements.txt.
 To install all deps run:\
 `pip install -r requirements.txt`\
 To run app start a uvicorn server pointing to FastAPI instance:\
